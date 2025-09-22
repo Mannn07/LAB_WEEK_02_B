@@ -1,51 +1,44 @@
 package com.example.lab_week_02_b
 
-import android.content.Intent // Added import for Intent
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
-import android.widget.Toast // Added import for Toast
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.textfield.TextInputEditText // Make sure this import is present
 
 class MainActivity : AppCompatActivity() {
+
     companion object {
-        private const val COLOR_KEY = "COLOR_KEY"
-    }
-
-    // Declare views
-    private lateinit var submitButton: Button
-    private lateinit var colorCodeInput: TextInputEditText // Declare TextInputEditText
-
-    private val startForResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
-        val data = activityResult.data
-        val error = data?.getBooleanExtra(ERROR_KEY, false)
-        if (error == true) {
-            Toast.makeText(this, getString(R.string.color_code_input_invalid), Toast.LENGTH_LONG).show()
-        }
+        const val INPUT_KEY  = "INPUT_KEY"   // hex color tanpa '#', contoh: FF8800
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main) // pakai layout XML pertama
 
-        // Initialize views
-        submitButton = findViewById(R.id.submit_button)
-        colorCodeInput = findViewById(R.id.color_code_input_field) // Initialize TextInputEditText
+        val til = findViewById<TextInputLayout>(R.id.color_code_input_wraper)
+        val et  = findViewById<TextInputEditText>(R.id.color_code_input_field)
+        val submit = findViewById<Button>(R.id.submit_button)
 
-        submitButton.setOnClickListener {
-            val colorCode = colorCodeInput.text.toString() // Use the initialized view
+        submit.setOnClickListener {
+            val raw = et.text?.toString()?.trim().orEmpty()
+            // validasi: 6 digit hex (boleh dengan atau tanpa '#')
+            val cleaned = raw.removePrefix("#")
+            val isValid = cleaned.matches(Regex("^[0-9A-Fa-f]{6}$"))
 
-            if (colorCode.isNotEmpty()) {
-                if (colorCode.length < 6) {
-                    Toast.makeText(this, getString(R.string.color_code_input_wrong_length), Toast.LENGTH_LONG).show()
-                } else {
-                    val resultIntent = Intent(this, ResultActivity::class.java)
-                    resultIntent.putExtra(COLOR_KEY, colorCode)
-                    startActivity(resultIntent)
-                }
+            if (!isValid) {
+                til.error = "Masukkan 6 digit hex, contoh: FF8800"
+                et.requestFocus()
+                return@setOnClickListener
             } else {
-                Toast.makeText(this, getString(R.string.color_code_input_empty), Toast.LENGTH_LONG).show()
+                til.error = null
             }
+
+            // kirim ke ResultActivity
+            val intent = Intent(this, ResultActivity::class.java)
+                .putExtra(INPUT_KEY, cleaned.uppercase())
+            startActivity(intent)
         }
     }
 }
